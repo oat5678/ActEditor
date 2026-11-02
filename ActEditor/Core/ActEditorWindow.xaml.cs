@@ -778,7 +778,7 @@ namespace ActEditor.Core
 		}
 
 		// ==============================================================
-		// โค้ดส่วนดึง JSON ของ PixelLab (รองรับ 8 และ 4 ทิศทาง + เซฟ .spr สมบูรณ์)
+		// PixelLab JSON Import (Supports 8 and 4 directions) & Indexed8 Conversion
 		// ==============================================================
 		private void _miImportPixelLab_Click(object sender, RoutedEventArgs e)
 		{
@@ -791,7 +791,7 @@ namespace ActEditor.Core
 					return;
 				}
 
-				// แยกค่าโหมดทิศทาง (8 หรือ 4) และ Base Action Index (0, 8, 16, 24, 32) จาก Tag เช่น "8_0" หรือ "4_8"
+				// Extract direction mode (8 or 4) and Base Action Index (0, 8, 16, 24, 32) from the Tag property
 				int directionMode = 8;
 				int baseAction = 0;
 
@@ -817,7 +817,7 @@ namespace ActEditor.Core
 				{
 					ImportPixelLabJson(dlg.FileName, tab.Act, baseAction, directionMode);
 
-					// รีเฟรชทั้งหน้าจอกลางและแถบ Sprite ด้านล่างทันที
+					// Refresh the main display and sprite selector immediately
 					tab.Act.InvalidateVisual();
 					tab.Act.InvalidateSpriteVisual();
 					tab.FrameRenderer.Update();
@@ -840,18 +840,18 @@ namespace ActEditor.Core
 				{
 					switch (direction.ToLowerInvariant())
 					{
-						case "south-west": // Row 4 -> จับคู่ Action Index 0 กับ 1
+						case "south-west": // Map to Action Index 0 and 1
 							return new int[] { baseAction + 0, baseAction + 1 };
-						case "north-west": // Row 3 -> จับคู่ Action Index 2 กับ 3
+						case "north-west": // Map to Action Index 2 and 3
 							return new int[] { baseAction + 2, baseAction + 3 };
-						case "north-east": // Row 2 -> จับคู่ Action Index 4 กับ 5
+						case "north-east": // Map to Action Index 4 and 5
 							return new int[] { baseAction + 4, baseAction + 5 };
-						case "south-east": // Row 1 -> จับคู่ Action Index 6 กับ 7
+						case "south-east": // Map to Action Index 6 and 7
 							return new int[] { baseAction + 6, baseAction + 7 };
 					}
 				}
 
-				// กรณีสำรองสำหรับ 4 ทิศทาง: อิงตามหมายเลข Row (1 ถึง 4)
+				// Fallback mapping based on row index for 4-direction mode
 				switch (row)
 				{
 					case 4: return new int[] { baseAction + 0, baseAction + 1 };
@@ -879,7 +879,7 @@ namespace ActEditor.Core
 					}
 				}
 
-				// กรณีสำรองสำหรับ 8 ทิศทาง: อิงตามลำดับแถวของ PixelLab (Row 1 ถึง 8)
+				// Fallback mapping based on row index for 8-direction mode
 				if (offset < 0 && row >= 1 && row <= 8)
 				{
 					int[] fallbackOffsets = new int[] { -1, 0, 7, 6, 5, 4, 3, 2, 1 };
@@ -947,11 +947,11 @@ namespace ActEditor.Core
 							var grfImage = new GrfImage(tempPngPath);
 							grfImage.Convert(GRF.Image.GrfImageType.Bgra32);
 
-							// เพิ่มรูปเข้า .spr เพียงครั้งเดียวต่อเฟรม เพื่อไม่ให้รูปซ้ำซ้อนในไฟล์ .spr
+							// Insert image into the .spr file only once per frame to prevent duplicates
 							currentAct.Sprite.InsertAny(grfImage);
 							int newSpriteIndex = currentAct.Sprite.Images.Count - 1;
 
-							// นำ SpriteIndex เดียวกันไปใส่ให้ครบทุก Action Index ที่จับคู่ไว้
+							// Assign the same SpriteIndex to all mapped Action Indexes
 							foreach (int targetAction in targetActions)
 							{
 								var layer = new GRF.FileFormats.ActFormat.Layer(newSpriteIndex, currentAct.Sprite);
@@ -991,12 +991,12 @@ namespace ActEditor.Core
 					return;
 				}
 
-				// เรียกใช้ SpriteManager ของระบบโดยตรงเพื่อจัดการ Palette และอัปเดต Layer Index ให้ครบถ้วน
+				// Directly invoke SpriteManager to handle palette assignment and layer index updates
 				SpriteManager spriteManager = new SpriteManager();
 				spriteManager.Init(tab);
 
-				// ตั้งค่าเป็น -1 เพื่อให้หน้าต่าง Format conflict เด้งถามแค่ครั้งเดียว
-				// (หากต้องการข้ามหน้าต่าง Format conflict ให้ใช้โหมด Merge (original) อัตโนมัติ สามารถเปลี่ยนเลข -1 เป็น 2 ได้เลย)
+				// Set to -1 to trigger the Format conflict prompt only once
+				// (Change to 2 to bypass the prompt and auto-select "Merge (original)")
 				SpriteManager.SpriteConverterOption = -1;
 
 				int convertedCount = 0;
@@ -1007,7 +1007,7 @@ namespace ActEditor.Core
 
 					while (act.Sprite.NumberOfBgra32Images > 0)
 					{
-						// ภาพ Bgra32 ตัวแรกจะอยู่ต่อท้ายภาพ Indexed8 เสมอ
+						// The first Bgra32 image is always located after the last Indexed8 image
 						int firstBgra32AbsIndex = act.Sprite.NumberOfIndexed8Images;
 						SpriteIndex index = SpriteIndex.FromAbsoluteIndex(firstBgra32AbsIndex, act.Sprite);
 
@@ -1017,7 +1017,7 @@ namespace ActEditor.Core
 				}
 				catch (OperationCanceledException)
 				{
-					// กรณีผู้ใช้กดปุ่ม Cancel ในหน้าต่าง Format conflict จะยกเลิกการแปลงทั้งหมด
+					// Cancel the conversion process if the user aborts from the Format conflict window
 					act.Commands.ActCancelEdit();
 					return;
 				}
@@ -1031,7 +1031,7 @@ namespace ActEditor.Core
 					act.Commands.ActEditEnd();
 				}
 
-				// อัปเดตหน้าจอ UI ทั้งหมด
+				// Update all UI elements
 				tab.Act.InvalidateVisual();
 				tab.Act.InvalidateSpriteVisual();
 				tab.FrameRenderer.Update();
@@ -1043,6 +1043,82 @@ namespace ActEditor.Core
 			{
 				ErrorHandler.HandleException(ex);
 			}
+		}
+
+		// ==============================================================
+		// Offset adjustment controls for shifting all sprites
+		// ==============================================================
+		private int GetOffsetValue()
+		{
+			if (int.TryParse(_txtOffset.Text, out int result))
+				return result;
+
+			MessageBox.Show("Please enter a valid number for Offset.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+			return 0;
+		}
+
+		private void ShiftAllSprites(int offsetX, int offsetY)
+		{
+			var tab = _tabEngine.GetCurrentTab();
+			if (tab == null)
+			{
+				MessageBox.Show("Please open an Act file first.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+
+			var act = tab.Act;
+
+			// Utilize ActEditor's Commands system to support Undo/Redo functionality
+			act.Commands.ActEditBegin("Shift all sprites");
+			try
+			{
+				foreach (var action in act.Actions)
+				{
+					foreach (var frame in action.Frames)
+					{
+						foreach (var layer in frame.Layers)
+						{
+							layer.OffsetX += offsetX;
+							layer.OffsetY += offsetY;
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				act.Commands.ActCancelEdit();
+				ErrorHandler.HandleException(ex);
+				return;
+			}
+			act.Commands.ActEditEnd();
+
+			// Immediately refresh the display to reflect new positions
+			tab.Act.InvalidateVisual();
+			tab.FrameRenderer.Update();
+		}
+
+		private void _btnMoveUp_Click(object sender, RoutedEventArgs e)
+		{
+			int offset = GetOffsetValue();
+			if (offset != 0) ShiftAllSprites(0, -offset);
+		}
+
+		private void _btnMoveDown_Click(object sender, RoutedEventArgs e)
+		{
+			int offset = GetOffsetValue();
+			if (offset != 0) ShiftAllSprites(0, offset);
+		}
+
+		private void _btnMoveLeft_Click(object sender, RoutedEventArgs e)
+		{
+			int offset = GetOffsetValue();
+			if (offset != 0) ShiftAllSprites(-offset, 0);
+		}
+
+		private void _btnMoveRight_Click(object sender, RoutedEventArgs e)
+		{
+			int offset = GetOffsetValue();
+			if (offset != 0) ShiftAllSprites(offset, 0);
 		}
 	}
 }

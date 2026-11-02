@@ -15,7 +15,12 @@ An `.act` and `.spr` file editor for Ragnarok Online (built upon the TokeiLibrar
    - Eliminates the tedious task of converting images frame-by-frame using the **"Convert All Sprites to Indexed8"** feature.
    - Manages the color palette and links all layer data in a single click, bypassing annoying Format Conflict pop-up windows.
 
-3. **🛡️ Game-Ready Safe Saving**
+3. **🎯 Global Sprite Shifting (D-Pad Controls)**
+   - Easily reposition all sprites across *every* frame and action simultaneously.
+   - Use the new directional D-Pad (Red arrows) and Offset textbox on the top toolbar to shift X/Y coordinates in bulk.
+   - Fully integrated with the Undo/Redo system for safe editing.
+
+4. **🛡️ Game-Ready Safe Saving**
    - Fixes the corrupted `.spr` file bug (1 KB size) commonly encountered with custom script additions.
    - The saved `.act` and `.spr` file structures fully comply with the rAthena standard, allowing them to run smoothly on the actual client without crashing (`renderer.cpp`).
 
@@ -28,8 +33,13 @@ An `.act` and `.spr` file editor for Ragnarok Online (built upon the TokeiLibrar
 2. Go to the top menu **Import PixelLab JSON**, choose your layout mode (**8 Directions** or **4 Directions**), and select the desired state (e.g., `1 - WALKING`).
 3. Select the exported `.json` file from PixelLab; the system will automatically slice the images and arrange the frames into actions.
 
-### 2. Converting All Sprites to Indexed8 (For servers requiring indexed palettes)
-1. After successfully importing the images, navigate to **Import PixelLab JSON > Convert All Sprites to Indexed8**.
+### 2. Bulk Shifting Sprite Positions
+1. Look for the **Offset** textbox on the top toolbar (next to the Undo/Redo buttons) and enter your desired movement distance (e.g., `50`).
+2. Click the Red Arrow buttons (↑, ↓, ←, →) to shift the position of all sprites across the entire project at once.
+3. If you make a mistake, simply click the **Undo** button to revert the position safely.
+
+### 3. Converting All Sprites to Indexed8 (For servers requiring indexed palettes)
+1. After successfully importing and positioning the images, navigate to **Import PixelLab JSON > Convert All Sprites to Indexed8**.
 2. Configure the palette merging settings (Format conflict) as needed and click OK. The system will convert all images in the project to Indexed8 in one go.
 3. Click `File > Save` to save the `.act` and `.spr` files, ready for use in the game.
 
